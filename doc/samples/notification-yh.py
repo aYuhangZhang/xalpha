@@ -17,6 +17,7 @@ XQ_HeRun = xa.rfundinfo("163406")
 ZhO_XinLanChou = xa.rfundinfo("166002")
 FG_TianHui = xa.rfundinfo("161005")
 YFD_LanChou = xa.rfundinfo("005827")
+ND_ZhouQiCeLue = xa.rfundinfo("570008")
 
 # secondly setup some policies you want to run and watch
 # 定期不定额的定投策略
@@ -71,10 +72,16 @@ DQbuDE_YFD_LanChou = xa.policy.scheduled_tune(
     times=pd.date_range('2021-01-01','2021-07-01',freq='D'),
     piece=[(2.8958, 2),(3.0567, 1)]) 
 
+DQbuDE_ND_ZhouQiCeLue = xa.policy.scheduled_tune(
+    ND_ZhouQiCeLue, 
+    500, 
+    times=pd.date_range('2021-01-01','2021-07-01',freq='D'),
+    piece=[(3.7037, 2),(3.9094, 1)]) 
+
 check = xa.review([DQbuDE_GTRY_JunGong, DQbuDE_XinNengYuanCar, DQbuDE_ZhO_YiLiao, DQbuDE_FG_HuGangShen, 
-    DQbuDE_XQ_HeRun, DQbuDE_ZhO_XinLanChou, DQbuDE_FG_TianHui, DQbuDE_YFD_LanChou], 
+    DQbuDE_XQ_HeRun, DQbuDE_ZhO_XinLanChou, DQbuDE_FG_TianHui, DQbuDE_YFD_LanChou, DQbuDE_ND_ZhouQiCeLue], 
     ["《定期不定额 - 题材 - 军工》", "《定期不定额 - 题材 - 新能源车》", "《定期不定额 - 题材 - 医疗》", "《定期不定额 - 题材 - 港股》",
-    "《定期不定额 - 主动混合 - 兴全和润》", "《定期不定额 - 主动混合 - 中欧新蓝筹》", "《定期不定额 - 主动混合 - 富国天惠》", "《定期不定额 - 主动混合 - 易方达蓝筹》"])
+    "《定期不定额 - 主动混合 - 兴全和润》", "《定期不定额 - 主动混合 - 中欧新蓝筹》", "《定期不定额 - 主动混合 - 富国天惠》", "《定期不定额 - 主动混合 - 易方达蓝筹》"], "《定期不定额 - 主动混合 - 诺德周期策略》"])
 
 """ WG_XinNengYuanCar = xa.policy.grid(
     yhXinNengYuanCar,
