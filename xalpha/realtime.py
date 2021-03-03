@@ -150,6 +150,8 @@ class review:
         else:
             self.namelist = namelist
         assert len(self.policylist) == len(self.namelist)
+
+        print("================ realtime")   #yh debug
         for i, policy in enumerate(policylist):
             row = policy.status[policy.status["date"] == date]
             if len(row) == 1:
@@ -160,6 +162,7 @@ class review:
                     self.namelist[i],
                 )
                 self.warn.append(warn)
+                print("================ warn[2] = ", warn[2])   # yh debug    
                 if warn[2] > 0:
                     sug = "买入%s元" % warn[2]
                 elif warn[2] < 0:
