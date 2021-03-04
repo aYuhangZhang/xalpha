@@ -43,7 +43,7 @@ def autoInvest(fundMessage, fundNum, n):
         fundMessage, 
         100,
         times=pd.date_range('2021-01-01','2021-07-01',freq='D'),
-        piece=[(down_fund[0], 5),(down_fund[1], 6),(down_fund[2], 7),(down_fund[3], 8),(down_fund[4], 9),(down_fund[5], 10)]) 
+        piece=[(down_fund[5], 10),(down_fund[4], 9),(down_fund[3], 8),(down_fund[2], 7),(down_fund[1], 6),(down_fund[0], 5)]) 
 
     print("========================================")
     print("DQbuDE_policy_lst" + str(n) + "==" + str(DQbuDE_policy_lst[n]))
