@@ -15,10 +15,10 @@ fundName = ["《题材 - 军工》", "《题材 - 新能源车》", "《题材 -
 
 n = 0
 
-down_fund = [0, 0, 0, 0, 0, 0]
 downPercent = [0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
-#DQbuDE_policy_lst = [''] * len(fundNum)
-DQbuDE_policy_lst = ['', '', '', '', '', '', '', '', '']
+down_fund = [0] * len(downPercent)
+DQbuDE_policy_lst = [''] * len(fundNum)
+# DQbuDE_policy_lst = ['', '', '', '', '', '', '', '', '']
 
 def get_mul_targetPrice(fundNum):
     path = "fund2021.csv"
@@ -31,8 +31,8 @@ def get_mul_targetPrice(fundNum):
 
     oriNetValue_fund = df_fund_cost.iloc[-1, -1]
 
-    for i in range(0,6):
-        down_fund[i] = oriNetValue_fund - oriNetValue_fund * downPercent[i]
+    for i in range(0,len(downPercent)):
+        down_fund[i] = round((oriNetValue_fund - oriNetValue_fund * downPercent[i]), 4)
 
         print("downPercent" +str(i)+ " = " +str(downPercent[i]))
         print("down_fund"+str(i)+" = " + str(down_fund[i]))
@@ -55,7 +55,7 @@ def autoInvest(fundMessage, fundNum, n):
     print("down_Fund[4] = " + str(down_fund[4]))
     print("down_Fund[5] = " + str(down_fund[5]))
 
-for n in range(0, 9):
+for n in range(0, len(fundNum)):
     fundMessage = xa.rfundinfo(fundNum[n])
     print("--------------- fundNum ----------------  = " + str(fundNum[n]))
 
