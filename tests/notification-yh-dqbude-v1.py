@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
-"""
-a sample to show how to utilize the realtime watching function
-"""
+
 import sys
+from loguru import logger
 
 sys.path.insert(0, "../")
 import xalpha as xa
 import pandas as pd
+
+logger.add('notifyFund.txt', format="{time} {level} {message}")
+logger.info("====== Notify Start =======")
 
 
 fundNum = ["001838", "501057", "003095", "005847", "163406", "166002", "161005", "005827", "570008"]
@@ -82,3 +84,5 @@ conf = {
 
 # finally send the notification
 check.notification(conf)
+
+logger.info("====== Notify End =======")
