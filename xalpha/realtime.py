@@ -13,11 +13,91 @@ from email.header import Header
 from email.mime.text import MIMEText
 from email.utils import formataddr, parseaddr
 from re import match
+from xalpha.universal import _get_daily
+from numpy.lib.function_base import append
 import pandas as pd
+from pandas.core.base import DataError
 
 from xalpha.cons import today_obj, rget
 from xalpha.info import fundinfo
 from xalpha.trade import trade
+
+import sys
+import xalpha as xa
+from loguru import logger
+sys.path.insert(0, "../")
+
+def check_duplicate_buy(fundNum, rf_target_price, price_scope_max, price_scope_min):
+    path = "..\\tests\\fund2021.csv"
+    i = 0
+    compare_result = ["", ""]
+
+    # bank_state = pd.read_csv(path)
+    # buy_record = bank_state(fundNum)
+    # logger.debug(fundName + "的购买记录" + str(buy_record))
+    read = xa.record(path)
+    bankstate = read.status
+
+    # 从账单中获取fundNum的有效购买记录 去除买入为 0 的数据
+    transaction_record = bankstate[bankstate[fundNum]!=0.0]
+    # transaction_record = bankstate["date", fundNum]     wrong
+
+    transaction_record = transaction_record.loc[:, ['date', fundNum]]
+    logger.debug("=========== fund buy record :" + fundNum + str(transaction_record))
+
+    # 通过账单获取所有历史交易的的日期和金额
+    for i in range(0,len(transaction_record)):        
+        history_transaction_date = transaction_record.iloc[i, -2]
+        history_transaction_date = history_transaction_date.date()
+        hittory_transaction_money = transaction_record.iloc[i, -1]
+        hittory_transaction_money = int(hittory_transaction_money)
+        logger.debug("===============曾经购买日期：" + str(history_transaction_date) + "===曾经购买金额：" + str(hittory_transaction_money))
+
+        # 获取历史交易净值
+        history_price_df = xa.get_daily(('F'+str(fundNum)), start=str(history_transaction_date), end=str(history_transaction_date))
+        logger.debug("==================history_price dataframe = "+"\n" + str(history_price_df))
+
+        history_price = history_price_df.iloc[0, -1]
+        history_price_date = history_price_df.iloc[0, -2]
+        logger.debug("==================history_price = " + str(history_price) + "===日期：" + str(history_price_date))
+
+
+        logger.debug("===============历史购买时的净值：" + str(history_price) + "净值高限=" + str(price_scope_max) + "净值底限 = " + str(price_scope_min))
+
+        if (price_scope_min <= history_price <= price_scope_max):
+            if (history_price >= rf_target_price):
+                logger.debug(str(fundNum) + "比较结果：已在同一点大于现净值加过")
+                compare_result.append([(" 大于 " + str(history_transaction_date)), str(hittory_transaction_money)])
+            else:
+                logger.debug(str(fundNum) + "比较结果：已在同一点小于于现净值加过")
+                compare_result.append([(" 小于 " + str(history_transaction_date)), str(hittory_transaction_money)])
+
+    logger.debug("============comparesult " + str(compare_result))
+    return str(compare_result)
+
+
+
+        #else:
+            #logger.debug("===============历史购买时的净值：" + str(history_price) + "净值高限=" + str(price_scope_max) + "净值底限 = " + str(price_scope_min))
+            #logger.debug( str(i) + "次比较结果：不在范围内，可加仓")
+
+       
+            
+    # read = xa.record(path) 
+    # read.status
+    # sysopen = xa.mul( status = read.status ) 
+    # df = sysopen.combsummary()
+    # df_fund_cost = df.loc[df['基金代码']==fundNum, ['单位成本']]
+  
+
+    # oriNetValue_fund = df_fund_cost.iloc[-1, -1]
+
+    # for i in range(0,len(downPercent)):
+    #     down_fund[i] = round((oriNetValue_fund - oriNetValue_fund * downPercent[i]), 4)
+
+    #     print("downPercent" +str(i)+ " = " +str(downPercent[i]))
+    #     print("down_fund"+str(i)+" = " + str(down_fund[i]))
+
 
 
 def _format_addr(s):
@@ -151,9 +231,13 @@ class review:
             self.namelist = namelist
         assert len(self.policylist) == len(self.namelist)
 
+        PRICE_UP = 0.05
+        PRICE_DOWN = 0.05
+
         print("================ realtime")   #yh debug
         for i, policy in enumerate(policylist):
-            row = policy.status[policy.status["date"] == date]
+            row = policy.status[policy.status["date"] == "2021-03-05"]
+            logger.debug("=============date:" + str(date))
             if len(row) == 1:
                 warn = (
                     policy.aim.name,
@@ -162,9 +246,35 @@ class review:
                     self.namelist[i],
                 )
                 self.warn.append(warn)
-                print("================ warn[2] = ", warn[2])   # yh debug    
+                print("================ " + str(warn[0]) + str(warn[2]))   # yh debug    
                 if warn[2] > 0:
                     sug = "买入%s元" % warn[2]
+
+                    # ======= yh check duplicate transaction start ==========
+
+                    rf_target_fund = xa.get_rt('F'+str(warn[1]))
+                    # rf_target_fund = rfundinfo(str(warn[1]))
+                    
+                    rf_target_price = rf_target_fund.get('estimate')
+                    rf_target_price_datetime = rf_target_fund.get('estimate_time')
+
+                    rf_target_price = round(rf_target_price, 4)
+                    
+                    logger.debug(str(date) + "================ " + str(warn[0]) + "基金净值price：" + str(rf_target_price) + "=== 日期："+ str(rf_target_price_datetime))
+
+                    price_scope_max = round(rf_target_price + rf_target_price * PRICE_UP, 4)
+                    price_scope_min = round(rf_target_price - rf_target_price * PRICE_DOWN, 4)
+                    logger.debug("=========== price_scope_max = " + str(price_scope_max) + "=========== price_scope_min = " + str(price_scope_min))
+
+                    compare_result = check_duplicate_buy(str(warn[1]), rf_target_price, price_scope_max, price_scope_min)
+
+                    if (compare_result != ["", ""]):
+                        logger.debug("比较结果：已在同一点加过" + str(compare_result))
+                        sug = sug + "！注！已在同一点加过 " + str(compare_result) + "=== 上限：" + str("%.2f%%" % (PRICE_UP * 100)) + "; 下限：-" + str("%.2f%%" % (PRICE_DOWN * 100)) + "==="
+                        logger.debug("============sug = " + sug)
+                        
+                    # ======= yh check duplicate transaction end ==========
+
                 elif warn[2] < 0:
                     ratio = -warn[2] / 0.005 * 100
                     share = (

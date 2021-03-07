@@ -7,22 +7,38 @@ import csv
 
 sys.path.insert(0, "../")
 
+from loguru import logger
+
+logger.add('test_info.txt', format="{time} {level} {message}")
+
 ioconf = {"save": True, "fetch": True, "path": "aapytest", "form": "csv"}
 ca = xa.cashinfo(interest=0.0002, start="2015-01-01")
 zzhb = xa.indexinfo("0000827", **ioconf)
-hs300 = xa.fundinfo("000311")
+hs300 = xa.rfundinfo("000311")
 zogqb = xa.mfundinfo("001211", **ioconf)
 f_yh, f_yh2 = xa.fundinfo("001838"), xa.fundinfo("501057")
+rf_GTRY_JunGong = xa.rfundinfo("001838", save=True)
 
 
 pd, pd2 = f_yh.get_stock_holdings(2020, 4), f_yh2.get_stock_holdings(2020,4)
+
+#pd3 = rf_GTRY_JunGong
+#pd3.to_csv("rfInfor.txt", index=False, sep=',', encoding='utf_8_sig')
 
 # encoding='utf-8'解决中文在excel的编码问题
 pd.to_csv("ttt.csv", index=False, sep=',', encoding='utf_8_sig')
 
 pd2.to_csv("ttt.csv", mode='a', index=False, sep=',', encoding='utf_8_sig')
 
+test_price_hs300 = round(hs300.price[hs300.price["date"] ==
+                       "2021-03-05"].iloc[0].netvalue, 4)
 
+logger.debug("================HS300 price:  " + str(test_price_hs300))
+
+test_price = round(ca.price[ca.price["date"] ==
+                       "2018-01-02"].iloc[0].netvalue, 4)
+
+logger.debug("================price  " + str(test_price))
 
 # @pytest.mark.skip(reason="fund report utility to be repaired due to web refactort")
 def test_fundreport():
@@ -39,6 +55,7 @@ def test_cash():
         round(ca.price[ca.price["date"] ==
                        "2018-01-02"].iloc[0].netvalue, 4) == 1.2453
     )
+
     assert ca.code == "mf"
     date, value, share = ca.shuhui(
         300, "2018-01-01", [[pd.Timestamp("2017-01-03"), 200]]

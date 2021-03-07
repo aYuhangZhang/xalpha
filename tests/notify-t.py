@@ -11,13 +11,15 @@ logger.add('notifyFund.txt', format="{time} {level} {message}")
 logger.info("====== Notify Start =======")
 
 
-fundNum = ["001838", "501057", "003095", "005847", "163406", "166002", "161005", "005827", "570008"]
-fundName = ["《题材 - 军工》", "《题材 - 新能源车》", "《题材 - 医疗》", "《题材 - 港股》",
-    "《主动混合 - 兴全和润》", "《主动混合 - 中欧新蓝筹》", "《主动混合 - 富国天惠》", "《主动混合 - 易方达蓝筹》", "《主动混合 - 诺德周期策略》"]
+fundNum = ["001838", "501057", "166002"]
+fundName = ["《题材 - 军工》", "《题材 - 新能源车》", "<中欧蓝筹混合>"]
+
+# fundNum = ["001838", "501057", "003095"]
+# fundName = ["《题材 - 军工》", "《题材 - 新能源车》", "《题材 - 医疗》"]
 
 n = 0
 
-downPercent = [0.03, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
+downPercent = [0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
 down_fund = [0] * len(downPercent)
 DQbuDE_policy_lst = [''] * len(fundNum)
 # DQbuDE_policy_lst = ['', '', '', '', '', '', '', '', '']
@@ -25,7 +27,19 @@ DQbuDE_policy_lst = [''] * len(fundNum)
 def get_mul_targetPrice(fundNum):
     path = "fund2021.csv"
     read = xa.record(path) 
-    read.status
+
+    bankstate = read.status
+
+    # bankstate.to_csv("d:\\tmp\\test-record.csv", encoding='utf_8_sig')
+    # logger.debug("========== Record status ==============" + str(read.status))
+
+    transaction_record = bankstate[bankstate[fundNum]!=0.0]
+    # transaction_record = bankstate["date", fundNum]     wrong
+
+    transaction_record = transaction_record.loc[:, ['date', fundNum]]
+
+    logger.debug("=========== fund buy record :" + fundNum + '\n' + str(transaction_record))
+
     sysopen = xa.mul( status = read.status ) 
     df = sysopen.combsummary()
     df_fund_cost = df.loc[df['基金代码']==fundNum, ['单位成本']]
@@ -45,7 +59,7 @@ def autoInvest(fundMessage, fundNum, n):
         fundMessage, 
         100,
         times=pd.date_range('2021-01-01','2021-07-01',freq='D'),
-        piece=[(down_fund[6], 10),(down_fund[5], 9),(down_fund[4], 8),(down_fund[3], 7),(down_fund[2], 6),(down_fund[1], 5), (down_fund[0], 3)]) 
+        piece=[(down_fund[5], 10),(down_fund[4], 9),(down_fund[3], 8),(down_fund[2], 7),(down_fund[1], 6),(down_fund[0], 5)]) 
 
     print("========================================")
     print("DQbuDE_policy_lst" + str(n) + "==" + str(DQbuDE_policy_lst[n]))
@@ -65,12 +79,11 @@ for n in range(0, len(fundNum)):
     autoInvest(fundMessage, down_fund[0:6], n)
 
 k=0
-for k in range(0, 9):
+for k in range(0, len(fundName)):
     print("DQbuDE_policy_lst" + str(k) +":======" + str(DQbuDE_policy_lst[k]))
 
-check = xa.review([DQbuDE_policy_lst[0], DQbuDE_policy_lst[1], DQbuDE_policy_lst[2], DQbuDE_policy_lst[3], 
-    DQbuDE_policy_lst[4], DQbuDE_policy_lst[5], DQbuDE_policy_lst[6], DQbuDE_policy_lst[7], DQbuDE_policy_lst[8]], 
-    [fundName[0], fundName[1], fundName[2], fundName[3], fundName[4], fundName[5], fundName[6], fundName[7], fundName[8]])
+check = xa.review([DQbuDE_policy_lst[0],DQbuDE_policy_lst[1],DQbuDE_policy_lst[2]], 
+    [fundName[0],fundName[1],fundName[2]])
 
 conf = {
     "sender": "zyhmike@126.com",
