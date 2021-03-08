@@ -236,7 +236,7 @@ class review:
 
         print("================ realtime")   #yh debug
         for i, policy in enumerate(policylist):
-            row = policy.status[policy.status["date"] == "2021-03-05"]
+            row = policy.status[policy.status["date"] == date]
             logger.debug("=============date:" + str(date))
             if len(row) == 1:
                 warn = (
