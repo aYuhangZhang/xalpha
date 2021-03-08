@@ -71,10 +71,12 @@ def check_duplicate_buy(fundNum, date, rf_target_price, price_scope_max, price_s
             else:
                 logger.debug(str(fundNum) + "比较结果：已在同一点小于于现净值加过")
                 compare_result.append([(" 小于 " + str(history_transaction_date)), str(hittory_transaction_money)])
-    # 获取20210113到今天的历史净值
+    # 获取20210113到今天的历史净值 date close
     all_history_price_df = xa.get_daily(('F'+str(fundNum)), start="20210113", end=str(date))
     logger.debug("get_daily========start=20210113=========== end = " + "\n" + str(date))
-    all_history_price_df = all_history_price_df.loc[:,:]
+
+    # 去除date数据,为取min准备
+    all_history_price_df = all_history_price_df.loc[:,"close"]
     logger.debug("========= all_history_price_df:" + str(all_history_price_df))
 
     all_history_lowest_price = all_history_price_df.min()
@@ -247,6 +249,7 @@ class review:
         print("================ realtime")   #yh debug
         for i, policy in enumerate(policylist):
             row = policy.status[policy.status["date"] == date]
+            logger.debug("=========row: " + "\n" + str(row).strip())
             logger.debug("=============date:" + str(date))
             if len(row) == 1:
                 warn = (
