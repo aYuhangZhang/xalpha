@@ -27,7 +27,7 @@ import xalpha as xa
 from loguru import logger
 sys.path.insert(0, "../")
 
-def check_duplicate_buy(fundNum, rf_target_price, price_scope_max, price_scope_min):
+def check_duplicate_buy(fundNum, date, rf_target_price, price_scope_max, price_scope_min):
     path = "..\\tests\\fund2021.csv"
     i = 0
     compare_result = ["", ""]
@@ -71,7 +71,17 @@ def check_duplicate_buy(fundNum, rf_target_price, price_scope_max, price_scope_m
             else:
                 logger.debug(str(fundNum) + "比较结果：已在同一点小于于现净值加过")
                 compare_result.append([(" 小于 " + str(history_transaction_date)), str(hittory_transaction_money)])
+    # 获取20210113到今天的历史净值
+    all_history_price_df = xa.get_daily(('F'+str(fundNum)), start="20210113", end=str(date))
+    logger.debug("get_daily========start=20210113=========== end = " + "\n" + str(date))
+    all_history_price_df = all_history_price_df.loc[:,:]
+    logger.debug("========= all_history_price_df:" + str(all_history_price_df))
 
+    all_history_lowest_price = all_history_price_df.min()
+    logger.debug("========= all_history_lowest_price:" + str(all_history_lowest_price))
+
+    if (rf_target_price < all_history_lowest_price):
+        compare_result.append("==已超过历史最低价:" + str(all_history_lowest_price))
     logger.debug("============comparesult " + str(compare_result))
     return str(compare_result)
 
@@ -266,7 +276,11 @@ class review:
                     price_scope_min = round(rf_target_price - rf_target_price * PRICE_DOWN, 4)
                     logger.debug("=========== price_scope_max = " + str(price_scope_max) + "=========== price_scope_min = " + str(price_scope_min))
 
-                    compare_result = check_duplicate_buy(str(warn[1]), rf_target_price, price_scope_max, price_scope_min)
+                    # date日期格式化yyyymmdd
+                    date = date.date()
+                    logger.debug("===========格式化后的date" + str(date))
+
+                    compare_result = check_duplicate_buy(str(warn[1]), date,rf_target_price, price_scope_max, price_scope_min)
 
                     if (compare_result != ["", ""]):
                         logger.debug("比较结果：已在同一点加过" + str(compare_result))
