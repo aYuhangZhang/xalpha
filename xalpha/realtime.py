@@ -86,7 +86,7 @@ def check_duplicate_buy(fundNum, date, rf_target_price, price_scope_max, price_s
                 lss_percent = "%.2f%%" % (lss_percent * 100)
                 logger.debug("==========lss_percent = " + str(lss_percent))
 
-                compare_result.append([(" 小于 " + str(history_transaction_date)), (str(history_transaction_money) + "估算幅度" +str(lss_percent))])
+                compare_result.append([(" 小于 " + str(history_transaction_date)), (str(history_transaction_money) + " 估算幅度" +str(lss_percent))])
 
     # 打印 history_price_list
     logger.debug("=========history_price_list: " + str(history_price_list))
@@ -117,7 +117,7 @@ def check_duplicate_buy(fundNum, date, rf_target_price, price_scope_max, price_s
         least_percent = "%.2f%%" % (least_percent * 100)
         logger.debug("======= least_percent: " + str(least_percent))
 
-        compare_result.append([("==已超过历史最低价:" + str(all_history_lowest_price)) , ("历史最低交易降幅：" + str(least_percent))])
+        compare_result.append([("已超过历史最低价:" + str(all_history_lowest_price)) , ("创新低！！估算降幅：" + str(least_percent))])
 
 
     logger.debug("============comparesult " + str(compare_result))
@@ -281,6 +281,7 @@ class review:
 
         PRICE_UP = 0.05
         PRICE_DOWN = 0.05
+        UPDown = "=== 上限：" + str("%.2f%%" % (PRICE_UP * 100)) + "; 下限：-" + str("%.2f%%" % (PRICE_DOWN * 100)) + "==="
 
         print("================ realtime")   #yh debug
         for i, policy in enumerate(policylist):
@@ -319,7 +320,7 @@ class review:
 
                     if (compare_result != ["", ""]):
                         logger.debug("比较结果：已在同一点加过" + str(compare_result))
-                        sug = sug + "！注！已在同一点加过 " + str(compare_result) + "=== 上限：" + str("%.2f%%" % (PRICE_UP * 100)) + "; 下限：-" + str("%.2f%%" % (PRICE_DOWN * 100)) + "==="
+                        sug = sug + " 注：已在同一点加过 " + str(compare_result)
                         logger.debug("============sug = " + sug)
                         
                     # ======= yh check duplicate transaction end ==========
@@ -336,7 +337,8 @@ class review:
                 self.message.append(
                     "根据%s计划，建议%s，%s(%s)" % (warn[3], sug, warn[0], warn[1])
                 )
-        self.content = "\n".join(map(str, self.message))
+        self.content = UPDown + "\n\n" + "\n\n".join(map(str, self.message))
+
 
     def __str__(self):
         return self.content
