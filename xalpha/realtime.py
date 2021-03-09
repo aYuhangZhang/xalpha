@@ -38,20 +38,27 @@ def check_duplicate_buy(fundNum, date, rf_target_price, price_scope_max, price_s
     read = xa.record(path)
     bankstate = read.status
 
-    # 从账单中获取fundNum的有效购买记录 去除买入为 0 的数据
-    transaction_record = bankstate[bankstate[fundNum]!=0.0]
+    # date日期格式化yyyymmdd
+    date = date.date()
+    logger.debug("===========格式化后的date" + str(date))
+
+    # 从账单中获取fundNum的有效购买记录 获取 >0 的数据 去除 <=0 的数据
+    transaction_record = bankstate[bankstate[fundNum] > 0.0]
     # transaction_record = bankstate["date", fundNum]     wrong
 
     transaction_record = transaction_record.loc[:, ['date', fundNum]]
     logger.debug("=========== fund buy record :" + fundNum + str(transaction_record))
 
+    history_price_list = []
+    min_history_price = 0
+
     # 通过账单获取所有历史交易的的日期和金额
     for i in range(0,len(transaction_record)):        
         history_transaction_date = transaction_record.iloc[i, -2]
         history_transaction_date = history_transaction_date.date()
-        hittory_transaction_money = transaction_record.iloc[i, -1]
-        hittory_transaction_money = int(hittory_transaction_money)
-        logger.debug("===============曾经购买日期：" + str(history_transaction_date) + "===曾经购买金额：" + str(hittory_transaction_money))
+        history_transaction_money = transaction_record.iloc[i, -1]
+        history_transaction_money = int(history_transaction_money)
+        logger.debug("===============曾经购买日期：" + str(history_transaction_date) + "===曾经购买金额：" + str(history_transaction_money))
 
         # 获取历史交易净值
         history_price_df = xa.get_daily(('F'+str(fundNum)), start=str(history_transaction_date), end=str(history_transaction_date))
@@ -61,16 +68,30 @@ def check_duplicate_buy(fundNum, date, rf_target_price, price_scope_max, price_s
         history_price_date = history_price_df.iloc[0, -2]
         logger.debug("==================history_price = " + str(history_price) + "===日期：" + str(history_price_date))
 
-
+        history_price_list.append([str(history_price)])
+        
         logger.debug("===============历史购买时的净值：" + str(history_price) + "净值高限=" + str(price_scope_max) + "净值底限 = " + str(price_scope_min))
 
         if (price_scope_min <= history_price <= price_scope_max):
-            if (history_price >= rf_target_price):
+            if (history_price > rf_target_price):
                 logger.debug(str(fundNum) + "比较结果：已在同一点大于现净值加过")
-                compare_result.append([(" 大于 " + str(history_transaction_date)), str(hittory_transaction_money)])
+                compare_result.append([(" 大于 " + str(history_transaction_date)), str(history_transaction_money)])
             else:
-                logger.debug(str(fundNum) + "比较结果：已在同一点小于于现净值加过")
-                compare_result.append([(" 小于 " + str(history_transaction_date)), str(hittory_transaction_money)])
+                logger.debug(str(fundNum) + "比较结果：已在同一点小于现净值加过")
+
+                # 当前净值与历史净值相差的百分比
+                lss_percent = (history_price - rf_target_price)/history_price
+
+                # 小数转化为百分比显示
+                lss_percent = "%.2f%%" % (lss_percent * 100)
+                logger.debug("==========lss_percent = " + str(lss_percent))
+
+                compare_result.append([(" 小于 " + str(history_transaction_date)), (str(history_transaction_money) + "估算幅度" +str(lss_percent))])
+
+    # 打印 history_price_list
+    logger.debug("=========history_price_list: " + str(history_price_list))
+
+
     # 获取20210113到今天的历史净值 date close
     all_history_price_df = xa.get_daily(('F'+str(fundNum)), start="20210113", end=str(date))
     logger.debug("get_daily========start=20210113=========== end = " + "\n" + str(date))
@@ -83,7 +104,22 @@ def check_duplicate_buy(fundNum, date, rf_target_price, price_scope_max, price_s
     logger.debug("========= all_history_lowest_price:" + str(all_history_lowest_price))
 
     if (rf_target_price < all_history_lowest_price):
-        compare_result.append("==已超过历史最低价:" + str(all_history_lowest_price))
+        # 当前新低净值 与 历史净值相差的百分比
+        min_history_price = min(history_price_list)
+        # 列表转化为float
+        min_history_price = list(map(float, min_history_price))
+        # 列表取值
+        min_history_price = min_history_price[0]
+
+        logger.debug("======= min_history_price: " + str(min_history_price))
+        # 计算历史最低交易降幅
+        least_percent = (rf_target_price - min_history_price)/min_history_price
+        least_percent = "%.2f%%" % (least_percent * 100)
+        logger.debug("======= least_percent: " + str(least_percent))
+
+        compare_result.append([("==已超过历史最低价:" + str(all_history_lowest_price)) , ("历史最低交易降幅：" + str(least_percent))])
+
+
     logger.debug("============comparesult " + str(compare_result))
     return str(compare_result)
 
@@ -249,8 +285,8 @@ class review:
         print("================ realtime")   #yh debug
         for i, policy in enumerate(policylist):
             row = policy.status[policy.status["date"] == date]
-            logger.debug("=========row: " + "\n" + str(row).strip())
-            logger.debug("=============date:" + str(date))
+            # logger.debug("=========row: " + "\n" + str(row).strip())
+            # logger.debug("=============date:" + str(date))
             if len(row) == 1:
                 warn = (
                     policy.aim.name,
@@ -279,11 +315,7 @@ class review:
                     price_scope_min = round(rf_target_price - rf_target_price * PRICE_DOWN, 4)
                     logger.debug("=========== price_scope_max = " + str(price_scope_max) + "=========== price_scope_min = " + str(price_scope_min))
 
-                    # date日期格式化yyyymmdd
-                    date = date.date()
-                    logger.debug("===========格式化后的date" + str(date))
-
-                    compare_result = check_duplicate_buy(str(warn[1]), date,rf_target_price, price_scope_max, price_scope_min)
+                    compare_result = check_duplicate_buy(str(warn[1]), date, rf_target_price, price_scope_max, price_scope_min)
 
                     if (compare_result != ["", ""]):
                         logger.debug("比较结果：已在同一点加过" + str(compare_result))
