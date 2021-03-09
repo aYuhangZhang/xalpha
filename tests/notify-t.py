@@ -7,6 +7,8 @@ sys.path.insert(0, "../")
 import xalpha as xa
 import pandas as pd
 
+xa.set_backend(backend="csv", path="D:\\zyh\\finfree\\cachedata", precached="20170101")
+
 logger.add('notifyFund.txt', format="{time} {level} {message}")
 logger.info("====== Notify Start =======")
 
